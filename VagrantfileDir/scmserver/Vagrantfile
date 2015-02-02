@@ -1,0 +1,28 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+  config.vm.define :scm do |scm|
+    scm.vm.box = "centos-6.5"
+    scm.vm.hostname="scmserver"
+    scm.vm.network "private_network", ip: "192.168.56.201"
+    scm.vm.provider "virtualbox" do |vb|
+      vb.customize ["modifyvm", :id, "--memory", "512"]
+    end
+    scm.vm.synced_folder "../ansible", "/app/ansible",
+    create: true, owner: "vagrant", group: "vagrant"
+  end
+
+  # chefのインストール(インターネット経由)
+  # scm.omnibus.chef_version = "12.0.1"
+  # chefのインストール(rpmを配置すること)
+  config.vm.provision :shell, :inline => "if ! rpm -qa | grep -q chef; then rpm -ivh /vagrant/chef-12.0.1-1.x86_64.rpm; fi" 
+    
+  scm.vm.provision "chef_solo" do |chef|
+    chef.cookbooks_path = "../chef-repo/cookbooks"
+  end
+end
